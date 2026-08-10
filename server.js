@@ -17,6 +17,7 @@ const statsRoutes = require('./src/routes/stats');
 const chatTitleRoutes = require('./src/routes/chatTitle');
 const registerDeviceRoutes = require('./src/routes/registerDevice');
 const { aiRateLimiter } = require('./src/middleware/rateLimiter');
+const { getLibraryStatus } = require('./src/services/libraryService');
 
 const app = express();
 
@@ -24,10 +25,14 @@ app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 
 app.get('/health', (req, res) => {
+  const lib = getLibraryStatus();
   res.json({
     status: 'ok',
     time: new Date().toISOString(),
-    library: (config.library.enabled && config.library.baseURL && config.library.serviceToken) ? 'configured' : 'off',
+    library: lib.configured ? 'configured' : 'off',
+    libraryUrl: lib.baseURL,
+    libraryLastError: lib.lastError,
+    libraryLastOkAt: lib.lastOkAt,
   });
 });
 
@@ -55,4 +60,7 @@ app.listen(config.port, () => {
   console.log(`✅ SKONGA AI Backend running on port ${config.port} (${config.nodeEnv})`);
   console.log(`   Providers enabled: ${config.fallbackOrder.filter(k => config.providers[k]?.enabled).join(', ') || 'NONE — set API keys in .env'}`);
   console.log(`   Library RAG: ${config.library.enabled && config.library.baseURL ? config.library.baseURL : 'disabled'}`);
+  if (config.library.enabled && !config.library.serviceToken) {
+    console.warn('   ⚠️  LIBRARY_ENABLED=true but LIBRARY_SERVICE_TOKEN is empty');
+  }
 });
