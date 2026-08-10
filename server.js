@@ -21,6 +21,9 @@ const { getLibraryStatus } = require('./src/services/libraryService');
 
 const app = express();
 
+// Render sits behind a proxy and sets X-Forwarded-For — required for rate-limit
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 
