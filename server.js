@@ -26,6 +26,27 @@ const app = express();
 // Render sits behind a proxy and sets X-Forwarded-For — required for rate-limit
 app.set('trust proxy', 1);
 
+// Security headers (anti-MITM hygiene + clickjacking / MIME sniffing)
+// TLS is terminated by Render; HSTS tells browsers to stay on HTTPS.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  res.setHeader(
+    'Permissions-Policy',
+    'camera=(self), microphone=(), geolocation=(), payment=()'
+  );
+  // Only meaningful over HTTPS (Render production)
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    );
+  }
+  next();
+});
+
 app.use(cors({
   origin: true,
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -118,12 +139,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error.' });
 });
 
-app.listen(config.port, () => {
-  console.log(`✅ SKONGA AI Backend running on port ${config.port} (${config.nodeEnv})`);
-  console.log(`   Providers enabled: ${config.fallbackOrder.filter(k => config.providers[k]?.enabled).join(', ') || 'NONE — set API keys in .env'}`);
-  console.log(`   Library RAG: ${config.library.enabled && config.library.baseURL ? config.library.baseURL : 'disabled'}`);
-  console.log(`   Payments mode: ${paymentService.PAYMENT_MODE}`);
-  if (config.library.enabled && !config.library.serviceToken) {
+const PORT = config.port || process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ SKONGA AI Backend running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+  const lib = getLibraryStatus();
+  console.log(`   Library RAG: ${lib.configured ? lib.baseURL : 'disabled'}`);
+  console.log(`   Payments: mode=${paymentService.PAYMENT_MODE}`);
+  if (lib.configured && !process.env.LIBRARY_SERVICE_TOKEN) {
     console.warn('   ⚠️  LIBRARY_ENABLED=true but LIBRARY_SERVICE_TOKEN is empty');
   }
 });
