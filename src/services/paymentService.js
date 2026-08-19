@@ -1,21 +1,6 @@
 /**
  * paymentService.js
- * ─────────────────────────────────────────────────────────────────────────
- * SKONGA is NOT a mobile-money wallet. We never collect, store, or transmit
- * the user's M-Pesa / Tigo / Airtel / Halo PIN. Payment is completed via
- * STK Push on the user's phone (aggregator / PSP).
- *
- * Security model (aligned with production practice):
- *  - HTTPS only (Render terminates TLS)
- *  - Server-side plan catalogue (client cannot invent prices)
- *  - Phone normalised + validated (TZ 255…)
- *  - Orders created server-side with opaque orderId
- *  - Webhook authenticity via HMAC-SHA256 (PAYMENT_WEBHOOK_SECRET)
- *  - Pro entitlement granted ONLY after verified payment
- *  - No PAN/PIN/credentials in logs or responses
- *
- * Storage: in-memory Map (fine for single Render instance / sandbox).
- * For production scale, replace with Redis or Postgres.
+ * SKONGA is NOT a mobile-money wallet. PIN never collected here.
  */
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
@@ -27,43 +12,61 @@ const PLANS = Object.freeze([
   { id: 'year', name: '1 Year', priceTzs: 45000, days: 365 },
 ]);
 
-/** @type {Map<string, object>} */
 const orders = new Map();
-/** @type {Map<string, object>} */
-const entitlements = new Map(); // key = uid || sessionId
+const entitlements = new Map();
 
 const PAYMENT_MODE = (process.env.PAYMENT_MODE || 'sandbox').toLowerCase();
 const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || '';
-const PROVIDER = process.env.PAYMENT_PROVIDER || 'sandbox'; // sandbox | selcom | azampay | ...
+const PROVIDER = process.env.PAYMENT_PROVIDER || 'sandbox';
+
+/** Maintainable prefix → label map (UX only; STK routing is PSP-side). */
+const TZ_MM_PREFIX = {
+  '25561': 'Yas',
+  '25562': 'HaloPesa',
+  '25563': 'Mobile money',
+  '25564': 'Mobile money',
+  '25565': 'Tigo Pesa',
+  '25566': 'Yas',
+  '25567': 'Tigo Pesa',
+  '25568': 'Airtel Money',
+  '25569': 'Airtel Money',
+  '25571': 'Tigo Pesa',
+  '25573': 'Mobile money',
+  '25574': 'M-Pesa',
+  '25575': 'M-Pesa',
+  '25576': 'M-Pesa',
+  '25577': 'Zantel',
+  '25578': 'Airtel Money',
+  '25579': 'Mobile money',
+};
 
 function listPlans() {
-  return PLANS.map(p => ({ ...p }));
+  return PLANS.map((p) => ({ ...p }));
 }
 
 function getPlan(planId) {
-  return PLANS.find(p => p.id === planId) || null;
+  return PLANS.find((p) => p.id === planId) || null;
 }
 
 /** Normalise TZ phone → 255XXXXXXXXX */
 function normalizePhone(input) {
   let p = String(input || '').replace(/\s+/g, '').replace(/^\+/, '');
   if (p.startsWith('0')) p = '255' + p.slice(1);
-  if (!p.startsWith('255')) p = '255' + p;
+  if (!p.startsWith('255') && /^[67]\d{8}$/.test(p)) p = '255' + p;
+  if (!p.startsWith('255') && /^\d{9}$/.test(p)) p = '255' + p;
   return p;
 }
 
+/** Valid Tanzania mobile MSISDN (255 + 9 digits starting with 6 or 7). */
 function isValidTzPhone(phone) {
-  return /^255\d{9}$/.test(phone);
+  return /^255[67]\d{8}$/.test(phone);
 }
 
-/** Detect network label for UX only — not used for auth */
+/** Operator label for UX / analytics — never reject payment solely on this. */
 function detectNetwork(phone) {
+  if (!isValidTzPhone(phone)) return null;
   const pre = phone.slice(0, 5);
-  if (['25574', '25575', '25576'].includes(pre)) return 'M-Pesa';
-  if (['25571', '25565', '25567'].includes(pre)) return 'Tigo Pesa';
-  if (['25568', '25569', '25578'].includes(pre)) return 'Airtel Money';
-  if (['25562'].includes(pre)) return 'HaloPesa';
-  return null;
+  return TZ_MM_PREFIX[pre] || 'Mobile money';
 }
 
 function entitlementKey({ uid, sessionId }) {
@@ -107,10 +110,6 @@ function grantPro({ uid, sessionId }, plan, orderId) {
   return ent;
 }
 
-/**
- * Create a payment order. Never accepts PIN.
- * In sandbox mode we simulate STK acceptance without calling a PSP.
- */
 function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
   const plan = getPlan(planId);
   if (!plan) {
@@ -120,16 +119,12 @@ function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
   }
   const normalized = normalizePhone(phone);
   if (!isValidTzPhone(normalized)) {
-    const err = new Error('Invalid Tanzania phone number');
+    const err = new Error('Invalid Tanzania mobile number');
     err.code = 'INVALID_PHONE';
     throw err;
   }
-  const network = detectNetwork(normalized);
-  if (!network) {
-    const err = new Error('Unsupported network / unknown prefix');
-    err.code = 'UNKNOWN_NETWORK';
-    throw err;
-  }
+  // Network label is optional UX — do not block STK on unknown prefix
+  const network = detectNetwork(normalized) || 'Mobile money';
 
   const orderId = 'skp_' + uuidv4().replace(/-/g, '').slice(0, 20);
   const order = {
@@ -142,22 +137,16 @@ function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
     network,
     uid: uid || null,
     sessionId: sessionId || null,
-    status: 'pending', // pending | stk_sent | paid | failed | expired
+    status: 'pending',
     provider: PROVIDER,
     mode: PAYMENT_MODE,
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    // Never store PIN. Never log full secrets.
     clientMeta: clientMeta ? { platform: clientMeta.platform || null } : null,
   };
 
   orders.set(orderId, order);
 
-  // ── PSP integration point ──────────────────────────────────────────
-  // When PAYMENT_PROVIDER is a real aggregator, call their STK API here
-  // with server-side credentials only. Example shape (pseudo):
-  //   await selcom.initiateSTK({ msisdn: normalized, amount: plan.priceTzs, orderId })
-  // For now:
   if (PAYMENT_MODE === 'sandbox') {
     order.status = 'stk_sent';
     order.sandboxHint =
@@ -198,10 +187,6 @@ function getOrder(orderId) {
   return orders.get(orderId) || null;
 }
 
-/**
- * Verify webhook HMAC. Body must be the raw JSON string used to sign.
- * Header: X-SKONGA-Signature: sha256=<hex>
- */
 function verifyWebhookSignature(rawBody, signatureHeader) {
   if (!WEBHOOK_SECRET) {
     if (PAYMENT_MODE === 'sandbox') return true;
@@ -220,9 +205,6 @@ function verifyWebhookSignature(rawBody, signatureHeader) {
   }
 }
 
-/**
- * Mark order paid after trusted signal (webhook or sandbox-confirm).
- */
 function markPaid(orderId, { providerRef } = {}) {
   const order = orders.get(orderId);
   if (!order) {
@@ -240,11 +222,7 @@ function markPaid(orderId, { providerRef } = {}) {
   order.updatedAt = Date.now();
   orders.set(orderId, order);
 
-  const ent = grantPro(
-    { uid: order.uid, sessionId: order.sessionId },
-    plan,
-    orderId
-  );
+  const ent = grantPro({ uid: order.uid, sessionId: order.sessionId }, plan, orderId);
 
   return {
     order: publicOrder(order),
@@ -282,5 +260,6 @@ module.exports = {
   verifyWebhookSignature,
   normalizePhone,
   isValidTzPhone,
+  detectNetwork,
   PAYMENT_MODE,
 };
