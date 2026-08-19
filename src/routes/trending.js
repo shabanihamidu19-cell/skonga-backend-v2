@@ -14,7 +14,7 @@ const CACHE_MS = 24 * 60 * 60 * 1000; // 1 day
 const SYSTEM_PROMPT = `You generate educational topics for Tanzanian students (primary/secondary/university).
 Return ONLY JSON (no other text, no markdown fences), as an array of 6 items shaped like:
 [{"emoji":"📚","subject":"Subject (e.g. Mathematics, Biology, History)","topic":"A short, engaging topic","blurb":"A 1-2 sentence explanation of why this topic matters to learn"}]
-Cover a mix of subjects (science, math, languages, history, geography, civics). Write in simple, clear English.`;
+Cover a mix of subjects (Bible knowledge, math, languages, history, geography, Computer Studies). Write in simple, clear English.`;
 
 router.get('/trending', async (req, res) => {
   const isFresh = cache.cards && (Date.now() - cache.generatedAt) < CACHE_MS;
