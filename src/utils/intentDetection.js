@@ -1,12 +1,6 @@
 /**
  * src/utils/intentDetection.js
- * MIRROR of the logic in index.html (shouldSearch/shouldGenerateImage).
- * This is an extra safeguard on the server side (defense-in-depth) - in
- * case the frontend sends forceSearch=false but the message genuinely
- * needs a search, the backend can still decide to search the web.
- * NOTE: the keyword lists below intentionally include Swahili phrases
- * (e.g. "tafuta", "tengeneza picha") because students may type in
- * Swahili — these are detection data, not UI text, so they stay as-is.
+ * MIRROR of www/index.html shouldSearch / image keywords.
  */
 const LIVE_INFO_KEYWORDS = [
   'latest', 'today', 'currently', 'breaking', 'update on', 'recent', 'this week',
@@ -15,6 +9,11 @@ const LIVE_INFO_KEYWORDS = [
   'live', 'right now', 'tafuta', 'habari za leo', 'habari mpya', 'matokeo ya',
   'necta', 'tamisemi', 'hali ya hewa', 'bei ya', 'kiwango cha ubadilishaji',
   'uchaguzi', 'rais wa sasa', 'sasa hivi kuna',
+  // explicit web / news intents (were missing → no Tavily, no source cards)
+  'from net', 'from the net', 'from internet', 'from the internet', 'on the internet',
+  'search the web', 'search online', 'google', 'kutoka mtandao', 'kutoka net',
+  'what is new', "what's new", 'whats new', 'nini kipya', 'news', 'current events',
+  'current news', 'trending', 'habari za sasa', 'ripoti mpya',
 ];
 
 const IMAGE_GEN_KEYWORDS = [
@@ -31,6 +30,9 @@ function shouldSearch(message) {
   if (!message || typeof message !== 'string') return false;
   const lower = message.trim().toLowerCase();
   if (!lower) return false;
+  if (/\bfrom\s+(the\s+)?(net|internet|web)\b/.test(lower)) return true;
+  if (/\b(search|find)\s+(online|the\s+web|on\s+the\s+web)\b/.test(lower)) return true;
+  if (/\bwhat'?s?\s+new\b/.test(lower) || /\bnini\s+kipya\b/.test(lower)) return true;
   return LIVE_INFO_KEYWORDS.some(kw => lower.includes(kw));
 }
 
