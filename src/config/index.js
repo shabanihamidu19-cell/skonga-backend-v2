@@ -1,7 +1,6 @@
 /**
  * src/config/index.js
  * Central configuration: API keys, capability matrix, model choices.
- * Update the model IDs here if a provider deprecates a given model.
  */
 require('dotenv').config();
 
@@ -14,7 +13,7 @@ const PROVIDER_FALLBACK_ORDER = (process.env.PROVIDER_FALLBACK_ORDER || 'groq,op
   .filter(k => {
     const isKnown = KNOWN_PROVIDER_KEYS.includes(k);
     if (!isKnown) {
-      console.warn(`[CONFIG WARNING] Ignoring unknown provider "${k}" found in PROVIDER_FALLBACK_ORDER - check for typos or a broken paste in your .env / Render env vars.`);
+      console.warn(`[CONFIG WARNING] Ignoring unknown provider "${k}" found in PROVIDER_FALLBACK_ORDER`);
     }
     return isKnown;
   });
@@ -35,7 +34,6 @@ module.exports = {
     timeoutMs: Number(process.env.PROVIDER_TIMEOUT_MS || 25000),
   },
 
-  // Tavily is used for Live Search (searching the web before the AI replies)
   tavily: {
     enabled: !!process.env.TAVILY_API_KEY,
     apiKey: process.env.TAVILY_API_KEY,
@@ -43,12 +41,12 @@ module.exports = {
   },
 
   // SKONGA Library API — internal curriculum RAG (TIE syllabus).
-  // Only this backend calls it (Bearer service token). Client never talks to it.
+  // Render free tier cold-start often exceeds 5s — default 25s.
   library: {
     enabled: process.env.LIBRARY_ENABLED === 'true' || process.env.LIBRARY_ENABLED === '1',
     baseURL: (process.env.LIBRARY_API_URL || '').replace(/\/$/, ''),
     serviceToken: process.env.LIBRARY_SERVICE_TOKEN || '',
-    timeoutMs: Number(process.env.LIBRARY_TIMEOUT_MS || 5000),
+    timeoutMs: Number(process.env.LIBRARY_TIMEOUT_MS || 25000),
   },
 
   providers: {
@@ -89,9 +87,6 @@ module.exports = {
         imageGen: process.env.AIMLAPI_IMAGE_MODEL || 'flux/schnell',
       },
     },
-    // BazaarLink: its API details aren't fully documented publicly — this adapter
-    // uses an "OpenAI-compatible" shape as a safe default. Check
-    // BazaarLink's real docs and adjust the baseURL/payload if they differ.
     bazaarlink: {
       enabled: !!process.env.BAZAARLINK_API_KEY,
       apiKey: process.env.BAZAARLINK_API_KEY,
@@ -101,9 +96,6 @@ module.exports = {
         chat: 'default',
       },
     },
-    // Google AI Studio (Gemini) — free tier, no payment card needed, ~50 requests/day.
-    // This is essentially the "free backup" for image generation if AIMLAPI
-    // credit runs out. Get a free key at https://aistudio.google.com/apikey
     gemini: {
       enabled: !!process.env.GEMINI_API_KEY,
       apiKey: process.env.GEMINI_API_KEY,
@@ -115,13 +107,9 @@ module.exports = {
         imageGen: process.env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image',
       },
     },
-    // Pollinations.ai — genuinely free, NO API KEY REQUIRED for basic use.
-    // Anonymous requests are rate-limited (~1 every 15s); registering a free
-    // account (no payment card) raises the limit and removes the watermark.
-    // This is the most friction-free image-gen backup available right now.
     pollinations: {
-      enabled: true, // always available - no key required for basic access
-      apiKey: process.env.POLLINATIONS_API_KEY || null, // optional, raises rate limit
+      enabled: true,
+      apiKey: process.env.POLLINATIONS_API_KEY || null,
       baseURL: 'https://image.pollinations.ai/prompt',
       capabilities: { chat: false, vision: false, imageGen: true, streaming: false, reasoning: false },
       models: {
