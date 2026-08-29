@@ -19,7 +19,6 @@ const entitlements = new Map();
 const PROVIDER = (process.env.PAYMENT_PROVIDER || process.env.SKONGA_PAYMENT_PROVIDER || 'sandbox').toLowerCase();
 const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || process.env.SKONGA_PAYMENT_WEBHOOK_SECRET || '';
 const _modeEnv = (process.env.PAYMENT_MODE || process.env.SKONGA_PAYMENT_MODE || '').toLowerCase();
-// Prefer live when ClickPesa is the active provider (ignore leftover PAYMENT_MODE=sandbox on host)
 const PAYMENT_MODE =
   PROVIDER === 'clickpesa'
     ? 'live'
@@ -191,6 +190,11 @@ async function clickpesaUssdPush({ amount, orderReference, phoneNumber }) {
   return data;
 }
 
+/** ClickPesa: orderReference must be alphanumeric only (no _ - or spaces). */
+function makeOrderId() {
+  return ('SKP' + uuidv4().replace(/-/g, '')).slice(0, 24);
+}
+
 async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
   const plan = getPlan(planId);
   if (!plan) {
@@ -206,7 +210,7 @@ async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
   }
   const network = detectNetwork(normalized) || 'Mobile money';
 
-  const orderId = 'skp_' + uuidv4().replace(/-/g, '').slice(0, 20);
+  const orderId = makeOrderId();
   const order = {
     orderId,
     planId: plan.id,
@@ -228,7 +232,6 @@ async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
 
   orders.set(orderId, order);
 
-  // ClickPesa live USSD wins whenever provider is clickpesa + keys exist
   if (PROVIDER === 'clickpesa' && clickpesaConfigured()) {
     try {
       const result = await clickpesaUssdPush({
