@@ -1,6 +1,7 @@
 /**
  * paymentService.js
  * SKONGA is NOT a mobile-money wallet. PIN never collected here.
+ * Live provider: ClickPesa USSD-PUSH (M-Pesa, Mixx by Yas, Airtel, HaloPesa).
  */
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
@@ -15,9 +16,26 @@ const PLANS = Object.freeze([
 const orders = new Map();
 const entitlements = new Map();
 
-const PAYMENT_MODE = (process.env.PAYMENT_MODE || 'sandbox').toLowerCase();
-const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || '';
-const PROVIDER = process.env.PAYMENT_PROVIDER || 'sandbox';
+// NOTE: Some hosts reject env name PAYMENT_MODE — we derive mode from PROVIDER + credentials.
+// Set PAYMENT_PROVIDER=clickpesa + CLICKPESA_* keys for live USSD-PUSH.
+const PROVIDER = (process.env.PAYMENT_PROVIDER || process.env.SKONGA_PAYMENT_PROVIDER || 'sandbox').toLowerCase();
+const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || process.env.SKONGA_PAYMENT_WEBHOOK_SECRET || '';
+const _modeEnv = (process.env.PAYMENT_MODE || process.env.SKONGA_PAYMENT_MODE || '').toLowerCase();
+const PAYMENT_MODE =
+  _modeEnv === 'live' || _modeEnv === 'sandbox'
+    ? _modeEnv
+    : PROVIDER === 'clickpesa'
+      ? 'live'
+      : 'sandbox';
+
+const CLICKPESA = {
+  clientId: (process.env.CLICKPESA_CLIENT_ID || '').trim(),
+  apiKey: (process.env.CLICKPESA_API_KEY || '').trim(),
+  baseUrl: (process.env.CLICKPESA_BASE_URL || 'https://api.clickpesa.com/third-parties').replace(/\/$/, ''),
+};
+
+let cachedToken = null;
+let tokenExpiresAt = 0;
 
 /** Maintainable prefix → label map (UX only; STK routing is PSP-side). */
 const TZ_MM_PREFIX = {
@@ -110,7 +128,82 @@ function grantPro({ uid, sessionId }, plan, orderId) {
   return ent;
 }
 
-function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
+/* ─── ClickPesa helpers ─── */
+
+function clickpesaConfigured() {
+  return !!(CLICKPESA.clientId && CLICKPESA.apiKey);
+}
+
+async function getClickpesaToken(force = false) {
+  if (!clickpesaConfigured()) {
+    const err = new Error('ClickPesa not configured (CLICKPESA_CLIENT_ID / CLICKPESA_API_KEY)');
+    err.code = 'CLICKPESA_CONFIG';
+    throw err;
+  }
+  const now = Date.now();
+  if (!force && cachedToken && now < tokenExpiresAt - 60_000) return cachedToken;
+
+  const res = await fetch(`${CLICKPESA.baseUrl}/generate-token`, {
+    method: 'POST',
+    headers: {
+      'client-id': CLICKPESA.clientId,
+      'api-key': CLICKPESA.apiKey,
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.token) {
+    console.error('[ClickPesa] generate-token failed', res.status, data);
+    const err = new Error(data.message || data.error || 'ClickPesa token failed');
+    err.code = 'CLICKPESA_TOKEN';
+    throw err;
+  }
+  let token = String(data.token).trim();
+  if (!token.toLowerCase().startsWith('bearer ')) token = `Bearer ${token}`;
+  cachedToken = token;
+  tokenExpiresAt = now + 55 * 60 * 1000;
+  return cachedToken;
+}
+
+async function clickpesaUssdPush({ amount, orderReference, phoneNumber }) {
+  const token = await getClickpesaToken();
+  const body = {
+    amount: String(amount),
+    currency: 'TZS',
+    orderReference: String(orderReference),
+    phoneNumber: String(phoneNumber),
+  };
+
+  async function doPush(authHeader) {
+    const res = await fetch(`${CLICKPESA.baseUrl}/payments/initiate-ussd-push-request`, {
+      method: 'POST',
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { res, data };
+  }
+
+  let { res, data } = await doPush(token);
+  if (res.status === 401) {
+    const token2 = await getClickpesaToken(true);
+    ({ res, data } = await doPush(token2));
+  }
+  if (!res.ok) {
+    console.error('[ClickPesa] USSD push failed', res.status, data);
+    const err = new Error(data.message || data.error || 'ClickPesa USSD push failed');
+    err.code = 'CLICKPESA_PUSH';
+    throw err;
+  }
+  return data;
+}
+
+/**
+ * Create order + (live) send USSD-PUSH via ClickPesa
+ */
+async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
   const plan = getPlan(planId);
   if (!plan) {
     const err = new Error('Invalid plan');
@@ -123,7 +216,6 @@ function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
     err.code = 'INVALID_PHONE';
     throw err;
   }
-  // Network label is optional UX — do not block STK on unknown prefix
   const network = detectNetwork(normalized) || 'Mobile money';
 
   const orderId = 'skp_' + uuidv4().replace(/-/g, '').slice(0, 20);
@@ -143,22 +235,48 @@ function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     clientMeta: clientMeta ? { platform: clientMeta.platform || null } : null,
+    clickpesaId: null,
   };
 
   orders.set(orderId, order);
 
-  if (PAYMENT_MODE === 'sandbox') {
+  if (PAYMENT_MODE === 'sandbox' || PROVIDER === 'sandbox') {
     order.status = 'stk_sent';
     order.sandboxHint =
       'Sandbox: call POST /api/payments/sandbox-confirm with { orderId } to simulate successful payment. Never use this in production.';
+  } else if (PROVIDER === 'clickpesa') {
+    if (!clickpesaConfigured()) {
+      const err = new Error('ClickPesa credentials missing on server');
+      err.code = 'CLICKPESA_CONFIG';
+      throw err;
+    }
+    try {
+      const result = await clickpesaUssdPush({
+        amount: plan.priceTzs,
+        orderReference: orderId,
+        phoneNumber: normalized,
+      });
+      order.status = result.status === 'SUCCESS' ? 'paid' : 'stk_sent';
+      order.clickpesaId = result.id || null;
+      order.channel = result.channel || network;
+      if (order.status === 'paid') {
+        grantPro({ uid: order.uid, sessionId: order.sessionId }, plan, orderId);
+        order.paidAt = Date.now();
+      }
+    } catch (e) {
+      order.status = 'failed';
+      order.failReason = String(e.message || 'ussd_failed').slice(0, 120);
+      orders.set(orderId, order);
+      throw e;
+    }
   } else {
     order.status = 'stk_sent';
     order.providerNote =
-      'Live mode requires PAYMENT_PROVIDER credentials. STK must be initiated by server, not the app.';
+      'Live mode: set PAYMENT_PROVIDER=clickpesa and CLICKPESA_* env vars to send real USSD-PUSH.';
   }
+
   order.updatedAt = Date.now();
   orders.set(orderId, order);
-
   return publicOrder(order);
 }
 
@@ -248,6 +366,44 @@ function markFailed(orderId, reason) {
   return publicOrder(order);
 }
 
+/**
+ * Handle ClickPesa webhook payload (PAYMENT RECEIVED / FAILED)
+ * orderReference === our orderId
+ */
+function handleClickpesaWebhook(payload) {
+  const event = payload.event || payload.type || '';
+  const data = payload.data || payload;
+  const orderReference = data.orderReference || data.order_reference;
+  if (!orderReference) {
+    return { ok: true, ignored: true, reason: 'no_orderReference' };
+  }
+
+  const order = orders.get(orderReference);
+  if (!order) {
+    console.warn('[ClickPesa webhook] unknown order', orderReference);
+    return { ok: true, ignored: true, reason: 'unknown_order' };
+  }
+
+  const statusRaw = String(data.status || '').toUpperCase();
+  const isSuccess =
+    event === 'PAYMENT RECEIVED' || statusRaw === 'SUCCESS' || statusRaw === 'SETTLED';
+  const isFailed = event === 'PAYMENT FAILED' || statusRaw === 'FAILED';
+
+  if (isSuccess) {
+    return {
+      ok: true,
+      ...markPaid(orderReference, {
+        providerRef: data.id || data.paymentReference || null,
+      }),
+    };
+  }
+  if (isFailed) {
+    markFailed(orderReference, data.message || 'failed');
+    return { ok: true, status: 'failed' };
+  }
+  return { ok: true, ignored: true, status: statusRaw || 'unknown' };
+}
+
 module.exports = {
   listPlans,
   getPlan,
@@ -258,8 +414,11 @@ module.exports = {
   markFailed,
   getProStatus,
   verifyWebhookSignature,
+  handleClickpesaWebhook,
   normalizePhone,
   isValidTzPhone,
   detectNetwork,
+  clickpesaConfigured,
   PAYMENT_MODE,
+  PROVIDER,
 };
