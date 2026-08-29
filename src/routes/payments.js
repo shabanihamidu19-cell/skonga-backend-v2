@@ -4,7 +4,8 @@
  * Security rules:
  *  - Never accept PIN / password / biometric material from the client.
  *  - Plan prices come from server only.
- *  - Webhook path verifies HMAC before granting Pro.
+ *  - ClickPesa webhook at /webhooks/clickpesa (no custom HMAC required by provider).
+ *  - Legacy /api/payments/webhook still supports HMAC for other aggregators.
  *  - Sandbox confirm disabled when PAYMENT_MODE=live.
  */
 const express = require('express');
@@ -23,7 +24,12 @@ const payLimiter = rateLimit({
 
 // GET /api/payments/plans
 router.get('/payments/plans', (req, res) => {
-  res.json({ plans: paymentService.listPlans(), mode: paymentService.PAYMENT_MODE });
+  res.json({
+    plans: paymentService.listPlans(),
+    mode: paymentService.PAYMENT_MODE,
+    provider: paymentService.PROVIDER,
+    clickpesa: paymentService.clickpesaConfigured(),
+  });
 });
 
 // GET /api/payments/pro?uid=&sessionId=
@@ -36,20 +42,19 @@ router.get('/payments/pro', (req, res) => {
 
 // POST /api/payments/initiate
 // Body: { planId, phone, uid?, sessionId? }
-router.post('/payments/initiate', payLimiter, (req, res) => {
+router.post('/payments/initiate', payLimiter, async (req, res) => {
   try {
     const { planId, phone, uid, sessionId } = req.body || {};
     if (!planId || !phone) {
       return res.status(400).json({ error: 'planId and phone are required.' });
     }
-    // Reject any attempt to send PIN-like fields
     if (req.body.pin || req.body.password || req.body.otp || req.body.secret) {
       return res.status(400).json({
-        error: 'PIN/OTP must never be sent to SKONGA. Complete payment on your phone via STK.',
+        error: 'PIN/OTP must never be sent to SKONGA. Complete payment on your phone via USSD prompt.',
       });
     }
 
-    const order = paymentService.createOrder({
+    const order = await paymentService.createOrder({
       planId: String(planId),
       phone: String(phone),
       uid: uid ? String(uid).slice(0, 128) : null,
@@ -60,15 +65,21 @@ router.post('/payments/initiate', payLimiter, (req, res) => {
     res.status(201).json({
       ok: true,
       message:
-        'STK Push will be sent to your phone. Enter your mobile-money PIN on the phone only — never in this app.',
+        'Ombi la malipo limetumwa kwenye simu yako. Ingiza PIN ya mobile money kwenye simu — siyo kwenye app.',
       order,
     });
   } catch (err) {
     const code = err.code || 'ERROR';
     const status =
-      code === 'INVALID_PLAN' || code === 'INVALID_PHONE' || code === 'UNKNOWN_NETWORK'
+      code === 'INVALID_PLAN' ||
+      code === 'INVALID_PHONE' ||
+      code === 'UNKNOWN_NETWORK' ||
+      code === 'CLICKPESA_CONFIG'
         ? 400
-        : 500;
+        : code === 'CLICKPESA_PUSH' || code === 'CLICKPESA_TOKEN'
+          ? 502
+          : 500;
+    console.error('[PAYMENTS] initiate error', code, err.message);
     res.status(status).json({ error: err.message || 'Could not start payment.', code });
   }
 });
@@ -86,8 +97,7 @@ router.get('/payments/status/:orderId', (req, res) => {
   });
 });
 
-// POST /api/payments/webhook
-// Aggregator calls this after payment. Signature required in live mode.
+// POST /api/payments/webhook — legacy HMAC path (other aggregators)
 router.post(
   '/payments/webhook',
   express.raw({ type: 'application/json' }),
@@ -117,7 +127,7 @@ router.post(
         return res.status(400).json({ error: 'Invalid JSON body.' });
       }
 
-      const orderId = payload.orderId || payload.reference;
+      const orderId = payload.orderId || payload.reference || payload.orderReference;
       const status = (payload.status || '').toLowerCase();
 
       if (!orderId) return res.status(400).json({ error: 'orderId required.' });
