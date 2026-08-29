@@ -16,17 +16,14 @@ const PLANS = Object.freeze([
 const orders = new Map();
 const entitlements = new Map();
 
-// NOTE: Some hosts reject env name PAYMENT_MODE — we derive mode from PROVIDER + credentials.
-// Set PAYMENT_PROVIDER=clickpesa + CLICKPESA_* keys for live USSD-PUSH.
 const PROVIDER = (process.env.PAYMENT_PROVIDER || process.env.SKONGA_PAYMENT_PROVIDER || 'sandbox').toLowerCase();
 const WEBHOOK_SECRET = process.env.PAYMENT_WEBHOOK_SECRET || process.env.SKONGA_PAYMENT_WEBHOOK_SECRET || '';
 const _modeEnv = (process.env.PAYMENT_MODE || process.env.SKONGA_PAYMENT_MODE || '').toLowerCase();
+// Prefer live when ClickPesa is the active provider (ignore leftover PAYMENT_MODE=sandbox on host)
 const PAYMENT_MODE =
-  _modeEnv === 'live' || _modeEnv === 'sandbox'
-    ? _modeEnv
-    : PROVIDER === 'clickpesa'
-      ? 'live'
-      : 'sandbox';
+  PROVIDER === 'clickpesa'
+    ? 'live'
+    : (_modeEnv === 'live' || _modeEnv === 'sandbox' ? _modeEnv : 'sandbox');
 
 const CLICKPESA = {
   clientId: (process.env.CLICKPESA_CLIENT_ID || '').trim(),
@@ -37,7 +34,6 @@ const CLICKPESA = {
 let cachedToken = null;
 let tokenExpiresAt = 0;
 
-/** Maintainable prefix → label map (UX only; STK routing is PSP-side). */
 const TZ_MM_PREFIX = {
   '25561': 'Yas',
   '25562': 'HaloPesa',
@@ -66,7 +62,6 @@ function getPlan(planId) {
   return PLANS.find((p) => p.id === planId) || null;
 }
 
-/** Normalise TZ phone → 255XXXXXXXXX */
 function normalizePhone(input) {
   let p = String(input || '').replace(/\s+/g, '').replace(/^\+/, '');
   if (p.startsWith('0')) p = '255' + p.slice(1);
@@ -75,12 +70,10 @@ function normalizePhone(input) {
   return p;
 }
 
-/** Valid Tanzania mobile MSISDN (255 + 9 digits starting with 6 or 7). */
 function isValidTzPhone(phone) {
   return /^255[67]\d{8}$/.test(phone);
 }
 
-/** Operator label for UX / analytics — never reject payment solely on this. */
 function detectNetwork(phone) {
   if (!isValidTzPhone(phone)) return null;
   const pre = phone.slice(0, 5);
@@ -127,8 +120,6 @@ function grantPro({ uid, sessionId }, plan, orderId) {
   entitlements.set(key, ent);
   return ent;
 }
-
-/* ─── ClickPesa helpers ─── */
 
 function clickpesaConfigured() {
   return !!(CLICKPESA.clientId && CLICKPESA.apiKey);
@@ -200,9 +191,6 @@ async function clickpesaUssdPush({ amount, orderReference, phoneNumber }) {
   return data;
 }
 
-/**
- * Create order + (live) send USSD-PUSH via ClickPesa
- */
 async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
   const plan = getPlan(planId);
   if (!plan) {
@@ -240,16 +228,8 @@ async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
 
   orders.set(orderId, order);
 
-  if (PAYMENT_MODE === 'sandbox' || PROVIDER === 'sandbox') {
-    order.status = 'stk_sent';
-    order.sandboxHint =
-      'Sandbox: call POST /api/payments/sandbox-confirm with { orderId } to simulate successful payment. Never use this in production.';
-  } else if (PROVIDER === 'clickpesa') {
-    if (!clickpesaConfigured()) {
-      const err = new Error('ClickPesa credentials missing on server');
-      err.code = 'CLICKPESA_CONFIG';
-      throw err;
-    }
+  // ClickPesa live USSD wins whenever provider is clickpesa + keys exist
+  if (PROVIDER === 'clickpesa' && clickpesaConfigured()) {
     try {
       const result = await clickpesaUssdPush({
         amount: plan.priceTzs,
@@ -269,10 +249,14 @@ async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
       orders.set(orderId, order);
       throw e;
     }
+  } else if (PROVIDER === 'clickpesa' && !clickpesaConfigured()) {
+    const err = new Error('ClickPesa credentials missing on server');
+    err.code = 'CLICKPESA_CONFIG';
+    throw err;
   } else {
     order.status = 'stk_sent';
-    order.providerNote =
-      'Live mode: set PAYMENT_PROVIDER=clickpesa and CLICKPESA_* env vars to send real USSD-PUSH.';
+    order.sandboxHint =
+      'Sandbox: call POST /api/payments/sandbox-confirm with { orderId } to simulate payment. Set PAYMENT_PROVIDER=clickpesa for live USSD.';
   }
 
   order.updatedAt = Date.now();
@@ -366,10 +350,6 @@ function markFailed(orderId, reason) {
   return publicOrder(order);
 }
 
-/**
- * Handle ClickPesa webhook payload (PAYMENT RECEIVED / FAILED)
- * orderReference === our orderId
- */
 function handleClickpesaWebhook(payload) {
   const event = payload.event || payload.type || '';
   const data = payload.data || payload;
