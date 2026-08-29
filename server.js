@@ -26,6 +26,19 @@ const app = express();
 // Render sits behind a proxy and sets X-Forwarded-For — required for rate-limit
 app.set('trust proxy', 1);
 
+// ClickPesa application webhook (PAYMENT RECEIVED / FAILED)
+// Register this URL on ClickPesa dashboard: https://<host>/webhooks/clickpesa
+app.post('/webhooks/clickpesa', express.json({ limit: '1mb' }), (req, res) => {
+  try {
+    const result = paymentService.handleClickpesaWebhook(req.body || {});
+    console.log('[ClickPesa webhook]', result);
+    return res.status(200).json({ received: true, ...result });
+  } catch (err) {
+    console.error('[ClickPesa webhook] error', err.message);
+    return res.status(200).json({ received: true, error: true });
+  }
+});
+
 // Security headers (anti-MITM hygiene + clickjacking / MIME sniffing)
 // TLS is terminated by Render; HSTS tells browsers to stay on HTTPS.
 app.use((req, res, next) => {
@@ -37,7 +50,6 @@ app.use((req, res, next) => {
     'Permissions-Policy',
     'camera=(self), microphone=(), geolocation=(), payment=()'
   );
-  // Only meaningful over HTTPS (Render production)
   if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
     res.setHeader(
       'Strict-Transport-Security',
@@ -114,6 +126,8 @@ app.get('/health', (req, res) => {
     libraryLastOkAt: lib.lastOkAt,
     payments: {
       mode: paymentService.PAYMENT_MODE,
+      provider: paymentService.PROVIDER,
+      clickpesa: paymentService.clickpesaConfigured(),
     },
   });
 });
@@ -144,7 +158,7 @@ app.listen(PORT, () => {
   console.log(`✅ SKONGA AI Backend running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
   const lib = getLibraryStatus();
   console.log(`   Library RAG: ${lib.configured ? lib.baseURL : 'disabled'}`);
-  console.log(`   Payments: mode=${paymentService.PAYMENT_MODE}`);
+  console.log(`   Payments: mode=${paymentService.PAYMENT_MODE} provider=${paymentService.PROVIDER} clickpesa=${paymentService.clickpesaConfigured()}`);
   if (lib.configured && !process.env.LIBRARY_SERVICE_TOKEN) {
     console.warn('   ⚠️  LIBRARY_ENABLED=true but LIBRARY_SERVICE_TOKEN is empty');
   }
