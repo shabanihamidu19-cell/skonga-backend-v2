@@ -2,6 +2,11 @@
  * paymentService.js
  * SKONGA is NOT a mobile-money wallet. PIN never collected here.
  * Live provider: ClickPesa USSD-PUSH (M-Pesa, Mixx by Yas, Airtel, HaloPesa).
+ *
+ * ClickPesa orderReference rules (from API errors + docs):
+ *  - alphanumeric only (A-Z a-z 0-9)
+ *  - max 20 characters
+ *  - not blank
  */
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
@@ -156,10 +161,12 @@ async function getClickpesaToken(force = false) {
 
 async function clickpesaUssdPush({ amount, orderReference, phoneNumber }) {
   const token = await getClickpesaToken();
+  // ClickPesa hard rules: alphanumeric, max 20 chars
+  const ref = String(orderReference).replace(/[^A-Za-z0-9]/g, '').slice(0, 20);
   const body = {
     amount: String(amount),
     currency: 'TZS',
-    orderReference: String(orderReference),
+    orderReference: ref,
     phoneNumber: String(phoneNumber),
   };
 
@@ -190,9 +197,10 @@ async function clickpesaUssdPush({ amount, orderReference, phoneNumber }) {
   return data;
 }
 
-/** ClickPesa: orderReference must be alphanumeric only (no _ - or spaces). */
+/** ClickPesa: orderReference = alphanumeric only, max 20 chars */
 function makeOrderId() {
-  return ('SKP' + uuidv4().replace(/-/g, '')).slice(0, 24);
+  // SK + 18 hex from uuid = 20 chars total
+  return ('SK' + uuidv4().replace(/-/g, '')).slice(0, 20);
 }
 
 async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
@@ -259,7 +267,7 @@ async function createOrder({ planId, phone, uid, sessionId, clientMeta }) {
   } else {
     order.status = 'stk_sent';
     order.sandboxHint =
-      'Sandbox: call POST /api/payments/sandbox-confirm with { orderId } to simulate payment. Set PAYMENT_PROVIDER=clickpesa for live USSD.';
+      'Sandbox: call POST /api/payments/sandbox-confirm with { orderId } to simulate payment.';
   }
 
   order.updatedAt = Date.now();
