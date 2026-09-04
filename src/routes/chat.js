@@ -2,9 +2,6 @@
  * src/routes/chat.js
  * POST /api/chat            → full JSON response (standardized)
  * POST /api/chat/stream      → Server-Sent Events streaming
- *
- * Usage: before AI, check quota via auth-content-service (optional).
- * Client should send userId (from auth-content JWT sub) when logged in.
  */
 const express = require('express');
 const router = express.Router();
@@ -15,9 +12,7 @@ const { checkUsage, recordUsage } = require('../services/usageClient');
 
 function resolveUserId(req) {
   const body = req.body || {};
-  // Prefer explicit userId from app (auth-content user id)
   if (body.userId && typeof body.userId === 'string') return body.userId.slice(0, 128);
-  // Optional: Authorization Bearer from auth-content (decode not done here — app sends userId)
   const h = req.headers['x-skonga-user-id'];
   if (h && typeof h === 'string') return h.slice(0, 128);
   return null;
@@ -27,6 +22,18 @@ function usageActionForTask(task) {
   if (task === 'vision' || task === 'scan') return 'scan';
   if (task === 'image' || task === 'image_generation') return 'image_generation';
   return 'chat';
+}
+
+function profileFromBody(body) {
+  return {
+    formLevel: body.formLevel ?? body.form ?? body.formHint ?? null,
+    combinationCode: body.combinationCode || body.tahasusi || body.combination || '',
+    preferredSubjects: Array.isArray(body.preferredSubjects)
+      ? body.preferredSubjects
+      : Array.isArray(body.subjects)
+        ? body.subjects
+        : [],
+  };
 }
 
 router.post('/chat', async (req, res) => {
@@ -58,6 +65,7 @@ router.post('/chat', async (req, res) => {
 
   const userId = resolveUserId(req);
   const action = usageActionForTask(task);
+  const profile = profileFromBody(req.body || {});
 
   const quota = await checkUsage({ userId, action });
   if (!quota.allowed) {
@@ -78,8 +86,15 @@ router.post('/chat', async (req, res) => {
     lang,
     style,
     identityQuestionCount,
+    formLevel: profile.formLevel,
+    combinationCode: profile.combinationCode,
+    preferredSubjects: profile.preferredSubjects,
   });
-  const library = await getRagContext({ query: message, subjectHint, formHint });
+  const library = await getRagContext({
+    query: message,
+    subjectHint,
+    formHint: formHint || profile.formLevel,
+  });
   const finalSystemPrompt = injectCurriculumContext(
     baseSystemPrompt,
     library,
@@ -95,7 +110,6 @@ router.post('/chat', async (req, res) => {
     images,
   });
 
-  // Count only successful replies
   if (result.reply && !result.error && userId) {
     recordUsage({
       userId,
@@ -136,6 +150,7 @@ router.post('/chat/stream', async (req, res) => {
 
   const userId = resolveUserId(req);
   const action = usageActionForTask(task);
+  const profile = profileFromBody(req.body || {});
 
   const quota = await checkUsage({ userId, action });
   if (!quota.allowed) {
@@ -161,8 +176,15 @@ router.post('/chat/stream', async (req, res) => {
     lang,
     style,
     identityQuestionCount,
+    formLevel: profile.formLevel,
+    combinationCode: profile.combinationCode,
+    preferredSubjects: profile.preferredSubjects,
   });
-  const library = await getRagContext({ query: message, subjectHint, formHint });
+  const library = await getRagContext({
+    query: message,
+    subjectHint,
+    formHint: formHint || profile.formLevel,
+  });
   const finalSystemPrompt = injectCurriculumContext(
     baseSystemPrompt,
     library,
