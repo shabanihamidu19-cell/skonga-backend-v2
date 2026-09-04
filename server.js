@@ -17,6 +17,7 @@ const statsRoutes = require('./src/routes/stats');
 const chatTitleRoutes = require('./src/routes/chatTitle');
 const registerDeviceRoutes = require('./src/routes/registerDevice');
 const paymentRoutes = require('./src/routes/payments');
+const tahasusiRoutes = require('./src/routes/tahasusi');
 const paymentService = require('./src/services/paymentService');
 const { aiRateLimiter } = require('./src/middleware/rateLimiter');
 const { getLibraryStatus } = require('./src/services/libraryService');
@@ -143,6 +144,8 @@ app.use('/api', registerDeviceRoutes);
 app.use('/api', feedbackRoutes);
 app.use('/api', statsRoutes);
 app.use('/api', paymentRoutes);
+// Tahasusi (A-Level combinations) — public read, no AI quota
+app.use('/api', tahasusiRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found.' });
