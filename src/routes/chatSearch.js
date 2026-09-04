@@ -24,6 +24,11 @@ router.post('/chat-search', async (req, res) => {
     curriculumContext = null,
     subjectHint = null,
     formHint = null,
+    formLevel = null,
+    combinationCode = '',
+    tahasusi = '',
+    preferredSubjects = [],
+    subjects = [],
   } = req.body || {};
 
   if (!message || typeof message !== 'string') {
@@ -43,9 +48,20 @@ router.post('/chat-search', async (req, res) => {
     lang,
     style,
     identityQuestionCount,
+    formLevel: formLevel ?? formHint,
+    combinationCode: combinationCode || tahasusi,
+    preferredSubjects: Array.isArray(preferredSubjects)
+      ? preferredSubjects
+      : Array.isArray(subjects)
+        ? subjects
+        : [],
   });
 
-  const library = await getRagContext({ query: message, subjectHint, formHint });
+  const library = await getRagContext({
+    query: message,
+    subjectHint,
+    formHint: formHint || formLevel,
+  });
   baseSystemPrompt = injectCurriculumContext(baseSystemPrompt, library, curriculumContext);
 
   let sources = [];
@@ -66,7 +82,6 @@ router.post('/chat-search', async (req, res) => {
         image: r.image || null,
       }));
 
-      // If a source has no image, try to attach a matching visual by domain
       for (const s of sources) {
         if (s.image) continue;
         const match = visuals.find(
