@@ -1,0 +1,164 @@
+{
+  "source": "PMO-RALG Secondary School Combinations Categories 2025",
+  "version": "2025.1",
+  "categories": [
+    {
+      "id": "social_science",
+      "name_en": "Social Science Combinations",
+      "name_sw": "Tahasusi za Sayansi ya Jamii",
+      "code": "01",
+      "combinations": [
+        {"code":"HGK","subjects":["History","Geography","Kiswahili"],"fields":["Ualimu","Archeology","Uandishi wa Habari","Rasilimaliwatu","Uthamini majengo na ardhi","Ugavi","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HGL","subjects":["History","Geography","English Language"],"fields":["Ualimu","Archeology","Ukalimani","Sheria","Uandishi wa Habari","Rasilimaliwatu","Uthamini majengo na ardhi","Ugavi","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HGF","subjects":["History","Geography","French"],"fields":["Ualimu","Archeology","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Uthamini majengo na ardhi","Ugavi","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HKL","subjects":["History","Kiswahili","English Language"],"fields":["Ualimu","Archeology","Sheria","Ukalimani","Uandishi wa Habari","Rasilimaliwatu"]},
+        {"code":"HGE","subjects":["History","Geography","Economics"],"fields":["Ualimu","Archeology","Uchumi","Rasilimaliwatu","Uthamini majengo na ardhi","Ugavi","Ukutubi","Utunzaji wa Kumbukumbu","Quantity Surveying","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Biashara"]},
+        {"code":"HGAr","subjects":["History","Geography","Arabic"],"fields":["Ualimu","Archeology","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Uthamini majengo na ardhi","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HGCh","subjects":["History","Geography","Chinese"],"fields":["Ualimu","Archeology","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Uthamini majengo na ardhi","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HGFa","subjects":["History","Geography","Fasihi ya Kiswahili"],"fields":["Ualimu","Archeology","Uandishi wa Habari","Rasilimaliwatu","Uthamini majengo na ardhi","Ugavi","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HGLi","subjects":["History","Geography","Literature in English"],"fields":["Ualimu","Archeology","Ukalimani","Sheria","Uandishi wa Habari","Rasilimaliwatu","Uthamini majengo na ardhi","Ugavi","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]}
+      ]
+    },
+    {
+      "id": "language",
+      "name_en": "Language Combinations",
+      "name_sw": "Tahasusi za Lugha",
+      "code": "02",
+      "combinations": [
+        {"code":"KLF","subjects":["Kiswahili","English Language","French"],"fields":["Ualimu","Ukalimani","Archeology","Sheria","Uandishi wa Habari","Rasilimaliwatu","Ugavi","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KLAr","subjects":["Kiswahili","English Language","Arabic"],"fields":["Ualimu","Ukalimani","Archeology","Sheria","Uandishi wa Habari","Rasilimaliwatu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KLCh","subjects":["Kiswahili","English Language","Chinese"],"fields":["Ualimu","Ukalimani","Archeology","Sheria","Uandishi wa Habari","Rasilimaliwatu","Uthamini majengo na ardhi","Ugavi","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KArCh","subjects":["Kiswahili","Arabic","Chinese"],"fields":["Ualimu","Ukalimani","Archeology","Sheria","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu"]},
+        {"code":"KArF","subjects":["Kiswahili","Arabic","French"],"fields":["Ualimu","Ukalimani","Sheria","Uandishi wa Habari","Rasilimaliwatu"]},
+        {"code":"LFAr","subjects":["English Language","French","Arabic"],"fields":["Ualimu","Ukalimani","Sheria","Uandishi wa Habari","Rasilimaliwatu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"LFCh","subjects":["English Language","French","Chinese"],"fields":["Ualimu","Ukalimani","Sheria","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"FArCh","subjects":["French","Arabic","Chinese"],"fields":["Ualimu","Ukalimani","Sheria","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HLF","subjects":["History","English Language","French"],"fields":["Ualimu","Ukalimani","Archeology","Sheria","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HLAr","subjects":["History","English Language","Arabic"],"fields":["Ualimu","Ukalimani","Archeology","Sheria","Uandishi wa Habari","Rasilimaliwatu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"BuLF","subjects":["Business","English Language","French"],"fields":["Ualimu","Biashara","Ukalimani","Sheria","Uandishi wa Habari","Rasilimaliwatu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"FLE","subjects":["French","English Language","Economics"],"fields":["Ualimu","Uchumi","Ukalimani","Sheria","Uandishi wa Habari","Rasilimaliwatu","Utawala","Quantity Surveying","Biashara","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HLCh","subjects":["History","English Language","Chinese"],"fields":["Ualimu","Ukalimani","Archeology","Sheria","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sayansi ya Siasa","Diplomasia","Sosholojia"]}
+      ]
+    },
+    {
+      "id": "business",
+      "name_en": "Business Studies Combinations",
+      "name_sw": "Tahasusi za Biashara",
+      "code": "03",
+      "combinations": [
+        {"code":"EBuAc","subjects":["Economics","Business Studies","Accountancy"],"fields":["Ualimu","Uchumi","Biashara","Uhasibu","Ugavi","Mipango","Uandishi wa Habari","Uhusiano","Rasilimaliwatu","Uthamini majengo na ardhi","Ukutubi","Utunzaji wa Kumbukumbu","Banking and Finance"]},
+        {"code":"EGM","subjects":["Economics","Geography","Mathematics"],"fields":["Ualimu","Uchumi","Uhasibu","Upimaji ardhi","Urubani","Usanifu majengo","Ukadiriaji majenzi","Ugavi","Mipango","Archeology","Uandishi wa Habari","Uhusiano","Rasilimaliwatu","Uthamini majengo na ardhi","Ukutubi","Utunzaji wa Kumbukumbu","Banking and Finance"]},
+        {"code":"ECsM","subjects":["Economics","Computer Science","Mathematics"],"fields":["Ualimu","Uchumi","TEHAMA","Uhasibu","Upimaji ardhi","Ukadiriaji majenzi","Usanifu majengo","Ugavi","Mipango","Rasilimaliwatu","Uthamini majengo na ardhi","Ukutubi","Utunzaji wa Kumbukumbu","Banking and Finance"]},
+        {"code":"BuAcCs","subjects":["Business Studies","Accountancy","Computer Science"],"fields":["Ualimu","Biashara","Uchumi","TEHAMA","Uhasibu","Ugavi","Mipango","Archeology","Uandishi wa Habari","Uhusiano","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Banking and Finance"]},
+        {"code":"BuAcM","subjects":["Business Studies","Accountancy","Mathematics"],"fields":["Ualimu","Biashara","Uchumi","Uhasibu","Ugavi","Mipango","Uandishi wa Habari","Uhusiano","Rasilimaliwatu","Uthamini majengo na ardhi","Ukutubi","Utunzaji wa Kumbukumbu"]},
+        {"code":"EBuI","subjects":["Economics","Business Studies","Islamic Knowledge"],"fields":["Ualimu","Uchumi","Biashara","Uhasibu","Ugavi","Mipango","Uandishi wa Habari","Uhusiano","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Banking and Finance"]},
+        {"code":"EBuD","subjects":["Economics","Business Studies","Divinity"],"fields":["Ualimu","Uchumi","Biashara","Uhasibu","Ugavi","Mipango","Uandishi wa Habari","Uhusiano","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Banking and Finance"]},
+        {"code":"MEBu","subjects":["Mathematics","Economics","Business Studies"],"fields":["Ualimu","Uchumi","Biashara","Uhasibu","Ugavi","Mipango","Uthamini majengo na ardhi"]},
+        {"code":"BuEL","subjects":["Business Studies","Economics","English Language"],"fields":["Ualimu","Uchumi","Biashara","Uhasibu","Ugavi","Mipango","Ukalimani","Rasilimaliwatu","Uthamini majengo na ardhi","Banking and Finance"]},
+        {"code":"BuEChi","subjects":["Business Studies","Economics","Chinese"],"fields":["Ualimu","Uchumi","Biashara","Uhasibu","Ugavi","Mipango","Ukalimani","Rasilimaliwatu","Uthamini majengo na ardhi","Banking and Finance"]},
+        {"code":"BuEAr","subjects":["Business Studies","Economics","Arabic"],"fields":["Ualimu","Uchumi","Biashara","Uhasibu","Ugavi","Mipango","Ukalimani","Rasilimaliwatu","Uthamini majengo na ardhi","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Banking and Finance"]},
+        {"code":"BuEF","subjects":["Business Studies","Economics","French"],"fields":["Ualimu","Uchumi","Biashara","Uhasibu","Ugavi","Mipango","Ukalimani","Rasilimaliwatu","Uthamini majengo na ardhi","Banking and Finance"]}
+      ]
+    },
+    {
+      "id": "science",
+      "name_en": "Science Combinations",
+      "name_sw": "Tahasusi za Sayansi",
+      "code": "04",
+      "combinations": [
+        {"code":"PCM","subjects":["Physics","Chemistry","Mathematics"],"fields":["Ualimu","Uhandisi","Ufamasia","Urubani","Naodha","Uchumi","Uhasibu","Upimaji ardhi","Usanifu majengo","Ukadiriaji majenzi","Ugavi","Mipango","Uthamini majengo na ardhi"]},
+        {"code":"PCB","subjects":["Physics","Chemistry","Biology"],"fields":["Ualimu","Uhandisi","Udaktari","Unguzi","Ufamasia","Teknolojia ya Maabara","Urubani","Naodha","Upimaji ardhi","Usanifu majengo","Ukadiriaji majenzi","Ugavi","Mipango","Uthamini majengo na ardhi"]},
+        {"code":"PGM","subjects":["Physics","Geography","Mathematics"],"fields":["Ualimu","Uhandisi","Urubani","Naodha","Jiolojia","Unajimu","Utabiri wa Hali ya Hewa","Uchumi","Uhasibu","Upimaji ardhi","Usanifu majengo","Ukadiriaji majenzi","Ugavi","Mipango","Uthamini majengo na ardhi"]},
+        {"code":"PMCs","subjects":["Physics","Mathematics","Computer Science"],"fields":["Ualimu","Uhandisi","Urubani","Naodha","Jiolojia","TEHAMA","Utabiri wa Hali ya Hewa","Uchumi","Uhasibu","Upimaji ardhi","Usanifu majengo","Ukadiriaji majenzi","Ugavi","Mipango","Uthamini majengo na ardhi"]},
+        {"code":"CBA","subjects":["Chemistry","Biology","Agriculture"],"fields":["Ualimu","Kilimo","Uhandisi","Udaktari wa mifugo","Teknolojia ya Maabara"]},
+        {"code":"CBN","subjects":["Chemistry","Biology","Food and Human Nutrition"],"fields":["Ualimu","Afya","Teknolojia ya Maabara","Lishe"]},
+        {"code":"CBG","subjects":["Chemistry","Biology","Geography"],"fields":["Ualimu","Teknolojia ya Maabara","Sayansi ya Aqua na Teknolojia ya Uvuvi","Usanifu majengo","Ukadiria majenzi"]},
+        {"code":"ABE","subjects":["Agriculture","Biology","Economics"],"fields":["Ualimu","Kilimo","Teknolojia ya Maabara","Sayansi ya Aqua na Teknolojia ya Uvuvi","Usanifu majengo","Ukadiria majenzi"]}
+      ]
+    },
+    {
+      "id": "music",
+      "name_en": "Music Combinations",
+      "name_sw": "Tahasusi za Muziki",
+      "code": "05",
+      "combinations": [
+        {"code":"MuArL","subjects":["Music","Arabic","English Language"],"fields":["Ualimu","Muziki","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"FaLMu","subjects":["Fasihi ya Kiswahili","English Language","Music"],"fields":["Ualimu","Muziki","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"FLMu","subjects":["French","English Language","Music"],"fields":["Ualimu","Muziki","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KLMu","subjects":["Kiswahili","English Language","Music"],"fields":["Ualimu","Muziki","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu"]},
+        {"code":"LChMu","subjects":["English Language","Chinese","Music"],"fields":["Ualimu","Muziki","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]}
+      ]
+    },
+    {
+      "id": "sports",
+      "name_en": "Sports Combinations",
+      "name_sw": "Tahasusi za Michezo",
+      "code": "06",
+      "combinations": [
+        {"code":"BNS","subjects":["Biology","Food and Human Nutrition","Sports"],"fields":["Ualimu","Michezo","Afya","Lishe","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"SArL","subjects":["Sports","Arabic","English Language"],"fields":["Ualimu","Michezo","Ukocha","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"FaLS","subjects":["Fasihi ya Kiswahili","English Language","Sports"],"fields":["Ualimu","Michezo","Ukocha","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"FLS","subjects":["French","English Language","Sports"],"fields":["Ualimu","Michezo","Ukocha","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KLS","subjects":["Kiswahili","English Language","Sports"],"fields":["Ualimu","Michezo","Ukocha","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"LChS","subjects":["English Language","Chinese","Sports"],"fields":["Ualimu","Michezo","Ukocha","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]}
+      ]
+    },
+    {
+      "id": "arts",
+      "name_en": "Arts Combinations",
+      "name_sw": "Tahasusi za Sanaa",
+      "code": "07",
+      "combinations": [
+        {"code":"KLT","subjects":["Kiswahili","English Language","Theatre Arts"],"fields":["Ualimu","Ugizaji","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KFT","subjects":["Kiswahili","French","Theatre Arts"],"fields":["Ualimu","Ugizaji","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"FaLT","subjects":["Fasihi ya Kiswahili","English Language","Theatre Arts"],"fields":["Ualimu","Ugizaji","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KLiT","subjects":["Kiswahili","Literature in English","Theatre Arts"],"fields":["Ualimu","Ugizaji","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KLiMu","subjects":["Kiswahili","Literature in English","Music"],"fields":["Ualimu","Muziki","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KFMu","subjects":["Kiswahili","French","Music"],"fields":["Ualimu","Muziki","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KLFi","subjects":["Kiswahili","English Language","Fine Art"],"fields":["Ualimu","Uchoraji","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KFFi","subjects":["Kiswahili","French","Fine Art"],"fields":["Ualimu","Uchoraji","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"FaLFi","subjects":["Fasihi ya Kiswahili","English Language","Fine Art"],"fields":["Ualimu","Uchoraji","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KLiFi","subjects":["Kiswahili","Literature in English","Fine Art"],"fields":["Ualimu","Uchoraji","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"KTeFi","subjects":["Kiswahili","Textile and Garment Construction","Fine Art"],"fields":["Ualimu","Uchoraji","Ushoni","Ubunifu wa mavazi","Uandishi wa Habari","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"LTeFi","subjects":["English Language","Textile and Garment Construction","Fine Art"],"fields":["Ualimu","Uchoraji","Ushoni","Ubunifu wa mavazi","Uandishi wa Habari","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"ArTeFi","subjects":["Arabic","Textile and Garment Construction","Fine Art"],"fields":["Ualimu","Uchoraji","Ushoni","Ubunifu wa mavazi","Uandishi wa Habari","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"ChiTeFi","subjects":["Chinese","Textile and Garment Construction","Fine Art"],"fields":["Ualimu","Uchoraji","Ushoni","Ubunifu wa mavazi","Uandishi wa Habari","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]}
+      ]
+    },
+    {
+      "id": "religious",
+      "name_en": "Religious Combinations",
+      "name_sw": "Tahasusi za Dini",
+      "code": "08",
+      "combinations": [
+        {"code":"IHG","subjects":["Islamic Knowledge","History","Geography"],"fields":["Ualimu","Archeology","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Falsafa"]},
+        {"code":"IHAr","subjects":["Islamic Knowledge","History","Arabic"],"fields":["Ualimu","Archeology","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Falsafa"]},
+        {"code":"IHL","subjects":["Islamic Knowledge","History","English Language"],"fields":["Ualimu","Archeology","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Falsafa"]},
+        {"code":"IHK","subjects":["Islamic Knowledge","History","Kiswahili"],"fields":["Ualimu","Archeology","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Falsafa"]},
+        {"code":"DHG","subjects":["Divinity","History","Geography"],"fields":["Ualimu","Archeology","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Falsafa"]},
+        {"code":"DHL","subjects":["Divinity","History","English Language"],"fields":["Ualimu","Archeology","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Falsafa"]},
+        {"code":"DHK","subjects":["Divinity","History","Kiswahili"],"fields":["Ualimu","Archeology","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Falsafa"]},
+        {"code":"DKL","subjects":["Divinity","Kiswahili","English Language"],"fields":["Ualimu","Archeology","Ukalimani","Uandishi wa Habari","Rasilimaliwatu","Ukutubi","Utunzaji wa Kumbukumbu","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia","Falsafa"]}
+      ]
+    },
+    {
+      "id": "tourism",
+      "name_en": "Tourism Combinations",
+      "name_sw": "Tahasusi za Utalii",
+      "code": "09",
+      "combinations": [
+        {"code":"GTK","subjects":["Geography","Tourism","Kiswahili"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"GTL","subjects":["Geography","Tourism","English Language"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"GTF","subjects":["Geography","Tourism","French"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"GTAr","subjects":["Geography","Tourism","Arabic"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"GTChi","subjects":["Geography","Tourism","Chinese"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HTK","subjects":["History","Tourism","Kiswahili"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HTL","subjects":["History","Tourism","English Language"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HTF","subjects":["History","Tourism","French"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HTA","subjects":["History","Tourism","Arabic"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"HTC","subjects":["History","Tourism","Chinese"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]},
+        {"code":"TLF","subjects":["Tourism","English Language","French"],"fields":["Ualimu","Utalii","Archeology","Uandishi wa Habari","Ukalimani","Utawala","Sheria","Sayansi ya Siasa","Diplomasia","Sosholojia"]}
+      ]
+    }
+  ]
+}
