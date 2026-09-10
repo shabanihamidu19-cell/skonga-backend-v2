@@ -2,6 +2,7 @@
  * paymentService.js
  * SKONGA Pro unlock is device-bound (sessionId), not email.
  * After USSD pay: webhook OR status/sync polls ClickPesa query API.
+ * Phase 4: when uid is present, also sync Pro to auth-content subscriptions.
  *
  * ClickPesa orderReference: alphanumeric, max 20 chars.
  * Phone: always 255XXXXXXXXX (never 06...).
@@ -10,6 +11,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const proSync = require('./proSyncClient');
 
 const PLANS = Object.freeze([
   { id: 'day', name: '1 Day', priceTzs: 620, days: 1 },
@@ -157,6 +159,22 @@ function grantPro({ uid, sessionId }, plan, orderId) {
   };
   entitlements.set(key, ent);
   saveEntitlements();
+
+  // Phase 4 — unlock quotas on auth-content when we know the account userId
+  if (uid) {
+    proSync
+      .syncProGrant({
+        userId: uid,
+        days: plan.days,
+        planId: plan.id,
+        expiresAt: ent.expiresAt,
+        orderId: orderId || null,
+      })
+      .catch(() => {});
+  } else {
+    console.warn('[PAY] Pro granted on device only — no uid to sync quotas');
+  }
+
   return ent;
 }
 
@@ -233,7 +251,6 @@ async function queryClickpesaPayment(orderReference) {
     console.warn('[ClickPesa] query failed', res.status, data);
     return null;
   }
-  // API may return array or object
   if (Array.isArray(data)) return data[0] || null;
   return data;
 }
@@ -368,6 +385,17 @@ function markPaid(orderId, { providerRef, sessionId, uid } = {}) {
     if (!pro.active) {
       const plan = getPlan(order.planId);
       if (plan) grantPro({ uid: order.uid, sessionId: order.sessionId }, plan, orderId);
+    } else if (order.uid) {
+      // Re-push sync if account Pro might have missed earlier
+      proSync
+        .syncProGrant({
+          userId: order.uid,
+          days: getPlan(order.planId)?.days || 30,
+          planId: order.planId,
+          expiresAt: pro.expiresAt,
+          orderId,
+        })
+        .catch(() => {});
     }
     return { order: publicOrder(order), pro: getProStatus(order), alreadyPaid: true };
   }
@@ -437,7 +465,6 @@ function handleClickpesaWebhook(payload) {
 
   let order = orders.get(orderReference);
   if (!order) {
-    // Remember orphan success so a later sync with sessionId can claim it
     orders.set(orderReference, {
       orderId: orderReference,
       planId: 'day',
