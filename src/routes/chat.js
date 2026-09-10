@@ -2,6 +2,7 @@
  * src/routes/chat.js
  * POST /api/chat            → full JSON response (standardized)
  * POST /api/chat/stream      → Server-Sent Events streaming
+ * Usage: chat|scan (+ rag_query when Library hits).
  */
 const express = require('express');
 const router = express.Router();
@@ -34,6 +35,26 @@ function profileFromBody(body) {
         ? body.subjects
         : [],
   };
+}
+
+function recordSuccessUsage(userId, action, result, library, extraMeta = {}) {
+  if (!userId || !result || result.error) return;
+  if (action === 'chat' && !result.reply) return;
+  if (action === 'scan' && !result.reply) return;
+  recordUsage({
+    userId,
+    action,
+    units: 1,
+    metadata: { provider: result.providerUsed, task: extraMeta.task, ...extraMeta },
+  }).catch(() => {});
+  if (library && library.ok) {
+    recordUsage({
+      userId,
+      action: 'rag_query',
+      units: 1,
+      metadata: { route: extraMeta.route || 'chat', topics: library.topics_found },
+    }).catch(() => {});
+  }
 }
 
 router.post('/chat', async (req, res) => {
@@ -110,13 +131,8 @@ router.post('/chat', async (req, res) => {
     images,
   });
 
-  if (result.reply && !result.error && userId) {
-    recordUsage({
-      userId,
-      action,
-      units: 1,
-      metadata: { provider: result.providerUsed, task },
-    }).catch(() => {});
+  if (result.reply && !result.error) {
+    recordSuccessUsage(userId, action, result, library, { task, route: 'chat' });
   }
 
   const statusCode = result.error && !result.reply ? 502 : 200;
@@ -202,13 +218,8 @@ router.post('/chat/stream', async (req, res) => {
       onToken,
     });
 
-    if (result.reply !== false && !result.error && userId) {
-      recordUsage({
-        userId,
-        action,
-        units: 1,
-        metadata: { provider: result.providerUsed, task, stream: true },
-      }).catch(() => {});
+    if (result.reply !== false && !result.error) {
+      recordSuccessUsage(userId, action, result, library, { task, route: 'chat/stream', stream: true });
     }
 
     res.write(
