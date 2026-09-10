@@ -1,6 +1,7 @@
 /**
  * src/routes/chatSearch.js
  * POST /api/chat-search → Live Search + optional curriculum RAG + visuals.
+ * Usage: action=chat (+ rag_query when Library hits).
  */
 const express = require('express');
 const router = express.Router();
@@ -9,6 +10,15 @@ const tavilyService = require('../services/tavilyService');
 const { shouldSearch } = require('../utils/intentDetection');
 const { buildSystemPrompt } = require('../utils/personalize');
 const { getRagContext, injectCurriculumContext } = require('../services/libraryService');
+const { checkUsage, recordUsage } = require('../services/usageClient');
+
+function resolveUserId(req) {
+  const body = req.body || {};
+  if (body.userId && typeof body.userId === 'string') return body.userId.slice(0, 128);
+  const h = req.headers['x-skonga-user-id'];
+  if (h && typeof h === 'string') return h.slice(0, 128);
+  return null;
+}
 
 router.post('/chat-search', async (req, res) => {
   const {
@@ -38,6 +48,20 @@ router.post('/chat-search', async (req, res) => {
       modelUsed: null,
       tokens: null,
       error: 'Field "message" is required.',
+    });
+  }
+
+  const userId = resolveUserId(req);
+  const quota = await checkUsage({ userId, action: 'chat' });
+  if (!quota.allowed) {
+    return res.status(403).json({
+      reply: null,
+      providerUsed: null,
+      modelUsed: null,
+      tokens: null,
+      error: quota.error || 'Daily limit reached. Upgrade to Pro.',
+      code: 'QUOTA_EXCEEDED',
+      quota: quota.quota || null,
     });
   }
 
@@ -117,6 +141,24 @@ router.post('/chat-search', async (req, res) => {
     history,
     systemPrompt: groundedSystemPrompt,
   });
+
+  if (result.reply && !result.error && userId) {
+    recordUsage({
+      userId,
+      action: 'chat',
+      units: 1,
+      metadata: { provider: result.providerUsed, route: 'chat-search', searched: !!doSearch },
+    }).catch(() => {});
+    if (library && library.ok) {
+      recordUsage({
+        userId,
+        action: 'rag_query',
+        units: 1,
+        metadata: { route: 'chat-search', topics: library.topics_found },
+      }).catch(() => {});
+    }
+  }
+
   const statusCode = result.error && !result.reply ? 502 : 200;
   res.status(statusCode).json({
     ...result,
@@ -124,6 +166,7 @@ router.post('/chat-search', async (req, res) => {
     visuals,
     citations: library?.citations || [],
     curriculumAligned: !!library?.curriculum_aligned,
+    usage: quota.skipped ? { skipped: true } : { plan: quota.quota?.plan, remaining: quota.quota?.remaining },
   });
 });
 
