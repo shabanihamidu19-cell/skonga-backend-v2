@@ -100,7 +100,6 @@ function getPlan(planId) {
   return PLANS.find((p) => p.id === planId) || null;
 }
 
-/** Always output 255XXXXXXXXX (never 06...). */
 function normalizePhone(input) {
   let p = String(input || '').replace(/\s+/g, '').replace(/^\+/, '');
   if (p.startsWith('0')) p = '255' + p.slice(1);
@@ -160,7 +159,6 @@ function grantPro({ uid, sessionId }, plan, orderId) {
   entitlements.set(key, ent);
   saveEntitlements();
 
-  // Phase 4 — unlock quotas on auth-content when we know the account userId
   if (uid) {
     proSync
       .syncProGrant({
@@ -238,7 +236,6 @@ async function clickpesaUssdPush({ amount, orderReference, phoneNumber }) {
   return data;
 }
 
-/** GET /third-parties/payments/{orderReference} */
 async function queryClickpesaPayment(orderReference) {
   const token = await getClickpesaToken();
   const ref = String(orderReference).replace(/[^A-Za-z0-9]/g, '').slice(0, 20);
@@ -355,6 +352,15 @@ function getOrder(orderId) {
   return orders.get(orderId) || null;
 }
 
+/** Phase 5 — raw lists for revenue analytics (admin only) */
+function listOrdersInternal() {
+  return Array.from(orders.values());
+}
+
+function listEntitlementsInternal() {
+  return Array.from(entitlements.values());
+}
+
 function verifyWebhookSignature(rawBody, signatureHeader) {
   if (!WEBHOOK_SECRET) {
     if (PAYMENT_MODE === 'sandbox') return true;
@@ -386,7 +392,6 @@ function markPaid(orderId, { providerRef, sessionId, uid } = {}) {
       const plan = getPlan(order.planId);
       if (plan) grantPro({ uid: order.uid, sessionId: order.sessionId }, plan, orderId);
     } else if (order.uid) {
-      // Re-push sync if account Pro might have missed earlier
       proSync
         .syncProGrant({
           userId: order.uid,
@@ -427,7 +432,6 @@ function markFailed(orderId, reason) {
   return publicOrder(order);
 }
 
-/** Poll ClickPesa; if SUCCESS/SETTLED mark paid + grant Pro */
 async function reconcileOrder(orderId, { sessionId, uid } = {}) {
   let order = orders.get(orderId);
   if (!order) return null;
@@ -528,6 +532,8 @@ module.exports = {
   isValidTzPhone,
   detectNetwork,
   clickpesaConfigured,
+  listOrdersInternal,
+  listEntitlementsInternal,
   PAYMENT_MODE,
   PROVIDER,
 };
