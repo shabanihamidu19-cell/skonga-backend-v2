@@ -17,6 +17,7 @@ const statsRoutes = require('./src/routes/stats');
 const chatTitleRoutes = require('./src/routes/chatTitle');
 const registerDeviceRoutes = require('./src/routes/registerDevice');
 const paymentRoutes = require('./src/routes/payments');
+const adminRevenueRoutes = require('./src/routes/adminRevenue');
 const tahasusiRoutes = require('./src/routes/tahasusi');
 const paymentService = require('./src/services/paymentService');
 const { aiRateLimiter } = require('./src/middleware/rateLimiter');
@@ -24,11 +25,8 @@ const { getLibraryStatus } = require('./src/services/libraryService');
 
 const app = express();
 
-// Render sits behind a proxy and sets X-Forwarded-For — required for rate-limit
 app.set('trust proxy', 1);
 
-// ClickPesa application webhook (PAYMENT RECEIVED / FAILED)
-// Register this URL on ClickPesa dashboard: https://<host>/webhooks/clickpesa
 app.post('/webhooks/clickpesa', express.json({ limit: '1mb' }), (req, res) => {
   try {
     const result = paymentService.handleClickpesaWebhook(req.body || {});
@@ -40,8 +38,6 @@ app.post('/webhooks/clickpesa', express.json({ limit: '1mb' }), (req, res) => {
   }
 });
 
-// Security headers (anti-MITM hygiene + clickjacking / MIME sniffing)
-// TLS is terminated by Render; HSTS tells browsers to stay on HTTPS.
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -63,10 +59,16 @@ app.use((req, res, next) => {
 app.use(cors({
   origin: true,
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-SKONGA-Signature', 'X-Skonga-Platform'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-SKONGA-Signature',
+    'X-Skonga-Platform',
+    'X-Service-Token',
+    'X-Skonga-User-Id',
+  ],
 }));
 
-// Payment webhook: capture raw body for HMAC before JSON parser
 app.post(
   '/api/payments/webhook',
   express.raw({ type: 'application/json' }),
@@ -144,7 +146,7 @@ app.use('/api', registerDeviceRoutes);
 app.use('/api', feedbackRoutes);
 app.use('/api', statsRoutes);
 app.use('/api', paymentRoutes);
-// Tahasusi (A-Level combinations) — public read, no AI quota
+app.use('/api', adminRevenueRoutes);
 app.use('/api', tahasusiRoutes);
 
 app.use((req, res) => {
