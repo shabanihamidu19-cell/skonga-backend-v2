@@ -19,6 +19,7 @@ const registerDeviceRoutes = require('./src/routes/registerDevice');
 const paymentRoutes = require('./src/routes/payments');
 const adminRevenueRoutes = require('./src/routes/adminRevenue');
 const tahasusiRoutes = require('./src/routes/tahasusi');
+const ttsRoutes = require('./src/routes/tts');
 const paymentService = require('./src/services/paymentService');
 const { aiRateLimiter } = require('./src/middleware/rateLimiter');
 const { getLibraryStatus } = require('./src/services/libraryService');
@@ -148,6 +149,7 @@ app.use('/api', statsRoutes);
 app.use('/api', paymentRoutes);
 app.use('/api', adminRevenueRoutes);
 app.use('/api', tahasusiRoutes);
+app.use('/api', ttsRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found.' });
