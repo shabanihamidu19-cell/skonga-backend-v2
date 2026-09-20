@@ -3,6 +3,7 @@
  * POST /api/chat            → full JSON response (standardized)
  * POST /api/chat/stream      → Server-Sent Events streaming
  * Usage: chat|scan (+ rag_query when Library hits).
+ * Semantic cache: educational non-personal queries cached (TTL + Jaccard).
  */
 const express = require('express');
 const router = express.Router();
@@ -10,6 +11,7 @@ const { generateAIResponse } = require('../services/aiService');
 const { buildSystemPrompt } = require('../utils/personalize');
 const { getRagContext, injectCurriculumContext } = require('../services/libraryService');
 const { checkUsage, recordUsage } = require('../services/usageClient');
+const semanticCache = require('../services/semanticCache');
 
 function resolveUserId(req) {
   const body = req.body || {};
@@ -57,6 +59,12 @@ function recordSuccessUsage(userId, action, result, library, extraMeta = {}) {
   }
 }
 
+function canUseSemanticCache(task, history, images) {
+  if (task && task !== 'chat') return false;
+  if (images && images.length) return false;
+  return true;
+}
+
 router.post('/chat', async (req, res) => {
   const {
     provider = 'auto',
@@ -101,6 +109,32 @@ router.post('/chat', async (req, res) => {
     });
   }
 
+  let cacheHit = null;
+  if (canUseSemanticCache(task, history, images)) {
+    try {
+      cacheHit = semanticCache.lookup(message);
+    } catch (_) {
+      cacheHit = { hit: false };
+    }
+  }
+
+  if (cacheHit && cacheHit.hit && cacheHit.reply) {
+    return res.status(200).json({
+      reply: cacheHit.reply,
+      providerUsed: 'cache',
+      modelUsed: 'semantic-cache',
+      tokens: null,
+      error: null,
+      cacheHit: true,
+      cacheScore: cacheHit.score,
+      citations: (cacheHit.meta && cacheHit.meta.citations) || [],
+      curriculumAligned: !!(cacheHit.meta && cacheHit.meta.curriculumAligned),
+      usage: quota.skipped
+        ? { skipped: true }
+        : { plan: quota.quota?.plan, remaining: quota.quota?.remaining },
+    });
+  }
+
   const baseSystemPrompt = buildSystemPrompt({
     systemPrompt,
     userName,
@@ -133,11 +167,21 @@ router.post('/chat', async (req, res) => {
 
   if (result.reply && !result.error) {
     recordSuccessUsage(userId, action, result, library, { task, route: 'chat' });
+    if (canUseSemanticCache(task, history, images)) {
+      try {
+        semanticCache.put(message, result.reply, {
+          citations: library?.citations || [],
+          curriculumAligned: !!library?.curriculum_aligned,
+          provider: result.providerUsed,
+        });
+      } catch (_) {}
+    }
   }
 
   const statusCode = result.error && !result.reply ? 502 : 200;
   res.status(statusCode).json({
     ...result,
+    cacheHit: false,
     citations: library?.citations || [],
     curriculumAligned: !!library?.curriculum_aligned,
     usage: quota.skipped ? { skipped: true } : { plan: quota.quota?.plan, remaining: quota.quota?.remaining },
@@ -175,6 +219,36 @@ router.post('/chat/stream', async (req, res) => {
       code: 'QUOTA_EXCEEDED',
       quota: quota.quota || null,
     });
+  }
+
+  if (canUseSemanticCache(task, history, [])) {
+    try {
+      const hit = semanticCache.lookup(message);
+      if (hit && hit.hit && hit.reply) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.flushHeaders?.();
+        const chunkSize = 48;
+        for (let i = 0; i < hit.reply.length; i += chunkSize) {
+          const token = hit.reply.slice(i, i + chunkSize);
+          res.write(`data: ${JSON.stringify({ token })}\n\n`);
+        }
+        res.write(
+          `data: ${JSON.stringify({
+            done: true,
+            providerUsed: 'cache',
+            modelUsed: 'semantic-cache',
+            cacheHit: true,
+            cacheScore: hit.score,
+            error: null,
+            citations: (hit.meta && hit.meta.citations) || [],
+            curriculumAligned: !!(hit.meta && hit.meta.curriculumAligned),
+          })}\n\n`
+        );
+        return res.end();
+      }
+    } catch (_) {}
   }
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -220,6 +294,15 @@ router.post('/chat/stream', async (req, res) => {
 
     if (result.reply !== false && !result.error) {
       recordSuccessUsage(userId, action, result, library, { task, route: 'chat/stream', stream: true });
+      if (result.reply && canUseSemanticCache(task, history, [])) {
+        try {
+          semanticCache.put(message, result.reply, {
+            citations: library?.citations || [],
+            curriculumAligned: !!library?.curriculum_aligned,
+            provider: result.providerUsed,
+          });
+        } catch (_) {}
+      }
     }
 
     res.write(
